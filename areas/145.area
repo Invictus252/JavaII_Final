@@ -1,0 +1,6 @@
+[title]Center Stage
+[description]A street with a few large buldings to the east and west, almost castle like. An interesting revelry boasts from the structure in front of you. There are stairs leading up to them.
+[comment]These exits could change later in the design.
+[gfx]southCenter
+[items]145
+[exits]0,0,141,146,1452,0
