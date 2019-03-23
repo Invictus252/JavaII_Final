@@ -1,5 +1,7 @@
-[description]a good dude 
+[description]changed it
 [name]jason
 [password]14aaf9ec
-[location]147
-[inventory] 
+[location]148
+[inventory] -1,-1,
+[hp]50
+[ac]10

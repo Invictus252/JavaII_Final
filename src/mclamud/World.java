@@ -4,12 +4,13 @@ import java.io.*;
 import java.net.Socket; //new
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
-
-public class World {
+import mclamud.StringAlignUtils.Alignment;
+public class World { 
+    public static boolean haxor=false;
     private final static int MIN_PASSWORD_LENGTH = 8;
     private final static int MIN_PLAYERNAME_LENGTH = 3;
     private final static int MAX_PLAYERNAME_LENGTH = 15;
@@ -26,7 +27,7 @@ public class World {
         boolean outcome = true;
         PrintWriter out = null;
         Area a = getArea(areaId);
-        if (a != null && p != null){
+        if (a != null && p != null && !p.NPC){
             try {
                 out = new PrintWriter(p.socket.getOutputStream(), true);
             } catch (IOException ex) {
@@ -34,69 +35,77 @@ public class World {
             }
 
             if (outcome && out != null){
-                String[] portals = {"north","south","west","east","up","down"};
-                
+                ArrayList<String> screenCHANGE = new ArrayList<>();
+                String[] portals = {"0000","0001","0010","0100","1000","1001"};
+                ArrayList<String> areaGFX = new ArrayList<>();
+                ArrayList<String> playerMENU = new ArrayList<>();
                 switch(a.gfx){
-                    case "townSquare":
-                        for(String x :GFX.townSquare){
-                            out.println(x);
-                        }
-                        break;
-                    case "buildingsWithManhole":
-                        for(String x :GFX.buildingsWithManhole){
-                            out.println(x);
-                        }
-                        break;
-                    case "southCenter":
-                        for(String x :GFX.southCenter){
-                            out.println(x);
-                        }
-                        break;    
-                    case "southEast":
-                        for(String x :GFX.southEast){
-                            out.println(x);
-                        }
-                        break;     
-                    case "southWest":
-                        for(String x :GFX.southWest){
-                            out.println(x);
-                        }
-                        break;    
                     default:
+                        areaGFX.addAll(Arrays.asList(GFX.screenDISPLAY[0]));
                         break;
                 }
-                out.println(a.title.trim());
-                out.println(a.description);
-
-                //List the available items    
-                out.print("Items available: | ");
-                for(String x : a.items){
-                    if(!x.equals(""))
-                        out.print(x + " | ");
-                }
-                out.println();
-                
-                
-                //List the available exits    
-                out.print("Exits available: ");
-                for (int i = 0; i < NUMBER_DIRECTIONS; i++){
-                    if (a.exits[i] != 0){
-                        out.print(portals[i] + " ");
+                StringAlignUtils CENTER = new StringAlignUtils(22, Alignment.CENTER);
+                playerMENU.add(String.format("   %22s     |",CENTER.format("PLAYER")));
+                playerMENU.add(String.format("   %22s     |"," ").replace(" ","-"));
+                playerMENU.add(String.format("   %22s     |", p.name.toUpperCase()));
+                playerMENU.add(String.format("   %-17s%5d    ]|","CPU HEALTH --[ ",p.getHP()));
+                playerMENU.add(String.format("   %-17s%5d    ]|","RAM ---------[ ",p.getAC()));
+                playerMENU.add(String.format("   %-17s%5d    ]|","RAM + -------[ ",p.getACmod()));
+                playerMENU.add(String.format("   %-17s%5d    ]|","XP ----------[ ",p.getXP()));
+                playerMENU.add(String.format("   %-17s%5d    ]|","MEM CNT -----[ ",p.inventory.size()));
+                playerMENU.add(String.format("   %22s     |"," ").replace(" ","-"));
+                playerMENU.add(String.format("   %22s     |",CENTER.format(".oO[MEM]Oo.")));
+                playerMENU.add(String.format("   %22s     |"," ").replace(" ","-"));
+                playerMENU.add(String.format("   %-17s%5d    ]|","SCRIPTS -----[ ",0));
+                playerMENU.add(String.format("   %-17s%5d    ]|","TROJANS -----[ ",0));
+                playerMENU.add(String.format("   %-17s%5d    ]|","WORMS   -----[ ",0));
+                playerMENU.add(String.format("   %-17s%5d    ]|","VIRUSES -----[ ",0));
+                playerMENU.add(String.format("   %-17s%5d    ]|","SCANS   -----[ ",0));
+                playerMENU.add(String.format("   %22s     |"," ").replace(" ","*"));
+                playerMENU.add(String.format("   %22s     |"," ").replace(" ","*"));
+                playerMENU.add(String.format("   %22s     |"," ").replace(" ","*"));
+                playerMENU.add(String.format("   %22s     |"," ").replace(" ","*"));
+                playerMENU.add(String.format("   %22s     |"," ").replace(" ","|"));
+                for (String[] screenDISPLAY : GFX.screenDISPLAY) {
+                    screenCHANGE.addAll(Arrays.asList(screenDISPLAY));
+                    try        
+                    {
+                        Thread.sleep(300);
+                    } 
+                    catch(InterruptedException ex) 
+                    {
+                        Thread.currentThread().interrupt();
                     }
-                }
-                out.println();
-                //List the players in the area, excluding self
-                for (Player areaPlayers : a.players.values()){
-                    if (!areaPlayers.name.equalsIgnoreCase(p.name)){
-                        out.println(areaPlayers.name + " is here.");
+                    GFX.clearScreen(out);
+                    out.println(String.format("%110s", "▼ @ The GRiD ▼           ").replace(" ", "-"));
+                    for(int i = 0;i < screenCHANGE.size();i++){
+                        if(i+1 > playerMENU.size()){
+                            out.println(screenCHANGE.get(i));
+                        }
+                        else{
+                            out.print(screenCHANGE.get(i));
+                            out.println(playerMENU.get(i));
+                        }
                     }
+                    String activePrograms="Programs running -> ";
+                    activePrograms = a.players.values().stream().filter((aP) -> (!aP.name.equalsIgnoreCase(p.name))).map((aP) -> aP.name + " | ").reduce(activePrograms, String::concat);
+                    out.println(a.title.trim());
+                    out.println(activePrograms);
+                    String codesAvail ="CODES: | ";
+                    codesAvail = a.items.stream().filter((x) -> (!x.equals(""))).map((x) -> x + " | ").reduce(codesAvail, String::concat);
+                    out.println(codesAvail);
+                    String exitsAvail ="PATHS AVAILABLE -> ";
+                    for (int i = 0; i < NUMBER_DIRECTIONS; i++){
+                        if (a.exits[i] != 0){
+                            exitsAvail += portals[i] + " ";
+                        }
+                    }
+                    out.println(exitsAvail);
+                    //out.println(a.description);
+                    screenCHANGE.clear();
                 }
-                out.println(GFX.border);
-                
-                
             }
         }
-        //out.println(GFX.border);
         return outcome;
     }
      
@@ -211,7 +220,13 @@ public class World {
                     case "inventory":
                         String[] items = value.trim().split("\\s*,\\s*");
                         p.inventory.addAll(Arrays.asList(items));
-                        break;                
+                        break;
+                    case "hp":
+                        p.setHP(Integer.parseInt(value.trim()));
+                        break;
+                    case "ac":
+                        p.setAC(Integer.parseInt(value.trim()));
+                        break;
                     default:
                 }
             } while(indexNext >= 0);
@@ -224,7 +239,7 @@ public class World {
      * @param areaId Integer containing the ID of the area.
      * @return Area object
      **********************************************************************/
-    private synchronized static Area getArea(int areaId){
+    public synchronized static Area getArea(int areaId){
         Area a;
         if (areaMap.containsKey(areaId)){
             a = areaMap.get(areaId);
@@ -276,15 +291,14 @@ public class World {
                 pw.println("[password]" + passwordHash);
                 pw.println("[location]" + String.valueOf(p.location));
                 pw.print("[inventory] ");
-                int i = 0;
-                p.inventory.forEach((x) -> {
-                    if(i == p.inventory.size()){
-                        pw.print(x);
-                    }
-                    else
-                        pw.print(x +",");
-                });
+                for(int i=0;i < p.inventory.size();i++){
+                    pw.print(p.inventory.indexOf(i));
+                    if(i != p.inventory.size())
+                        pw.print(",");
+                }
                 pw.println();
+                pw.println("[hp]" + p.getHP());
+                pw.println("[ac]" + p.getAC());
             }
         } catch(FileNotFoundException | UnsupportedEncodingException e){
             outcome = false;
@@ -330,6 +344,23 @@ public class World {
         } else {
             outcome = false;
         }
+        if(outcome==true){
+            for(Player check : Server.curUsers){
+                System.out.println("Checking Current Users ->" + check);
+                System.out.println("Check name -> " + check.name);
+                System.out.println("Check password -> "+ check.password);
+                System.out.println("cur password -> " + playerPassword);
+                String tmp = Integer.toHexString(playerPassword.hashCode());
+                System.out.println("after hash -> " + playerPassword);
+                if(check.name.equalsIgnoreCase(tmp)){
+                    outcome = false;
+                    System.out.println("caught illegal login");
+                    haxor = true;
+                }
+            }                  
+        }else {
+            outcome = false;
+        }
         return outcome;
     }
     
@@ -342,6 +373,7 @@ public class World {
      * @return boolean - true if player name meets requirements, false if not.
      *************************************************************************/
     public synchronized static boolean isValidPlayername(String playerName){
+        
         boolean outcome = true;
         int flags;
         if (playerName.length() >= MIN_PLAYERNAME_LENGTH && 
@@ -362,7 +394,25 @@ public class World {
                     break;
                 }
             }
-        } else {
+        }
+        if(outcome==true){
+            Server.curUsers.stream().map((check) -> {
+                System.out.println("Checking Current Users ->" + check);
+                return check;
+            }).map((check) -> {
+                System.out.println("Check name -> " + check.name);
+                return check;
+            }).map((check) -> {
+                System.out.println("Check password -> "+ check.password);
+                return check;
+            }).forEachOrdered((check) -> {
+                System.out.println("cur name -> " + playerName);
+                if (check.name.equalsIgnoreCase(playerName)) {
+                    System.out.println("caught illegal login");
+                    haxor = true;
+                }
+            });                  
+        }else {
             outcome = false;
         }
         return outcome;
@@ -382,7 +432,8 @@ public class World {
  */
     public synchronized static boolean doWalk(Player p, String direction){
         boolean outcome = false;
-        String[] dirList = {"north","south","west","east","up","down"};
+        String[] dirList = {"north","south","west","east","up","down",
+                            "0000","0001","0010","0100","1000","1001"};
         String[] dirAbbr = {"n","s","w","e","u","d"};
         int areaIndex = -1;
         direction = direction.trim().toLowerCase();
@@ -396,10 +447,10 @@ public class World {
             Area a = getArea(p.location);
             if (a != null){
                 if (a.exits[areaIndex] > 0){
-                    sendMessageToArea(p, p.name + " has exited " + 
+                    sendMessageToArea(p, p.name + " has initialized " + 
                         dirList[areaIndex] + "."); //new
                     movePlayer(p, a.exits[areaIndex]);
-                    sendMessageToArea(p, p.name + " has arrived."); //new
+                    sendMessageToArea(p, p.name + " has terminated."); //new
                     outcome = true;
                 }
             }
@@ -409,8 +460,9 @@ public class World {
     
     public synchronized static boolean checkDirection(Player p, String direction){
         boolean outcome = false;
-        String[] dirList = {"north","south","wet","east","up","down"};
-        String[] dirAbbr = {"n","s","w","e"};
+        String[] dirList = {"north","south","wet","east","up","down",
+                            "0000","0001","0010","0100","1000","1001"};
+        String[] dirAbbr = {"n","s","w","e","u","d"};
         int areaIndex = -1;
         direction = direction.trim().toLowerCase();
         for (int i = 0; i < NUMBER_DIRECTIONS; i++){
@@ -435,7 +487,8 @@ public class World {
  * @param direction room to be displayed
  */
     public synchronized static void doLook(PrintWriter out,Player p,String direction) {
-        String[] dirList = {"north","south","west","east","up","down"};
+        String[] dirList = {"north","south","west","east","up","down",
+                            "0000","0001","0010","0100","1000","1001"};
         String[] dirAbbr = {"n","s","w","e","u","d"};
         int areaIndex = -1;
         direction = direction.trim().toLowerCase();
@@ -447,9 +500,9 @@ public class World {
         }
         if (areaIndex >= 0){
             Area a = getArea(p.location);
-            String curPlayers = "Current Players  -> | ";
-            String[] portals = {"north","south","west","east","up","down"};
-            String curExits = "Available Exits -> | ";
+            String curPlayers = "Current Programs  -> | ";
+            String[] portals = {"0000","0001","0010","0100","1000","1001"};
+            String curExits = "Available Paths -> | ";
             if (a != null){
                 if (a.exits[areaIndex] > 0){
                     Area b = getArea(a.exits[areaIndex]);
@@ -467,7 +520,7 @@ public class World {
                     out.println(curPlayers);
                     }
                 else if(a.exits[areaIndex] == 0)
-                    out.println("Nothing to see.");
+                    out.println("Nothing to process.");
             }
 
         }
@@ -492,6 +545,21 @@ public class World {
             }
         } else {
             outcome = false;
+        }
+        return outcome;
+    }
+    
+    public synchronized static boolean sendMessageToWorld(Player p, String message){ //new
+        boolean outcome = true;
+        PrintWriter out;
+        for (Player x : Server.curUsers){
+                try {
+                    Socket psock = x.socket;
+                    out = new PrintWriter(psock.getOutputStream(), true);
+                    out.println(p.name + " ]--> " + message);
+                    } catch (IOException e) {
+                        outcome = false;
+                    }
         }
         return outcome;
     }
@@ -555,7 +623,7 @@ public class World {
         return outcome;
     }
     
-    /***********************************************************************************
+/***********************************************************************************
      * helpMe can be used for command explaining or command direction
      * @param out Current PrintWriter
      * @param command command being referenced
@@ -677,11 +745,11 @@ public class World {
     
     public synchronized static void showPlayer(PrintWriter out,Player p){
         String[] playerSheet ={" ________________________",
-                               "| Name  : " + p.name,
-                               "| HP    : " + p.getHP(),
-                               "| AC    : " + p.getAC(),
-                               "| ACmod : " + p.getACmod(),
-                               "| Info  : " + p.description,
+                               "| Name       : " + p.name,
+                               "| CPU HEALTH : " + p.getHP(),
+                               "| RAM        : " + p.getAC(),
+                               "| RAM +      : " + p.getACmod(),
+                               "| COMMENTS   : " + p.description,
                                "|________________________"};        
         for (String strTemp : playerSheet){
             out.println(strTemp);
@@ -698,12 +766,12 @@ public class World {
         }
         
         String[] playerSheet ={" ________________________",
-                               "| Name  : " + X.name,
-                               "| HP    : " + X.getHP(),
-                               "| AC    : " + X.getAC(),
-                               "| ACmod : " + X.getACmod(),
-                               "| Info  : " + X.description,
-                               "|________________________"};        
+                               "| Name       : " + p.name,
+                               "| CPU HEALTH : " + p.getHP(),
+                               "| RAM        : " + p.getAC(),
+                               "| RAM +      : " + p.getACmod(),
+                               "| COMMENTS   : " + p.description,
+                               "|________________________"};    
         for (String strTemp : playerSheet){
             out.println(strTemp);
         }
@@ -742,7 +810,9 @@ public class World {
                     System.out.println(p2.name + " missed " + p1.name + "."); 
                 }
 
-                try {Thread.sleep(500);}catch(Exception e){}
+                try {
+                    Thread.sleep(500);
+                }catch(InterruptedException e){}
             }
         }
         
