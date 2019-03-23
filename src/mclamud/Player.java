@@ -10,14 +10,20 @@ public class Player {
     public String name = "Nobody";
     public String password = "Password1";
     public int location = 144;
-    public int armorClass =0;
-    public int hitPoints = 0;
+    public int armorClass =10;
+    public int hitPoints = 50;
+    private int XP;
     public int acMOD = 0;
     public boolean NPC = false;
+    public boolean FIGHT = false;
+    public boolean SAVAGE = false;
+    public boolean worldACTIVE = true;
+    public String lastAction = "";
     public ArrayList<String> inventory = new ArrayList<>();
     public Socket socket;
     
-    public Player(){}
+    public Player(){this.XP = 100;
+}
      
     public void setAC(int ac){
         armorClass = ac;
@@ -45,7 +51,22 @@ public class Player {
     }
     
     public Player(Socket sock){
+        this.XP = 100;
         this.socket = sock;
+    }
+
+    /**
+     * @return the XP
+     */
+    public int getXP() {
+        return XP;
+    }
+
+    /**
+     * @param XP the XP to set
+     */
+    public void setXP(int XP) {
+        this.XP = XP;
     }
 
     

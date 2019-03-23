@@ -10,85 +10,93 @@ import java.util.Scanner;
 
 public class PlayerThread implements Runnable {
     
+    
     private final Socket psock;
     private final Player player;
-    private final Stooges GMAN = new Stooges();
-    private final Stooges GMAN2 = new Stooges();
-    private final Stooges GMAN3 = new Stooges();
-    private final int[] filesForNPC = {141,142,143,144,145,146,147,148,149,1412,1413,1452,1453,1462,1463};
-    private static int cmdCtr = 0;
+    private static boolean haxor;
+    private final Stooges npc = new Stooges();
+    private final int[] filesForNPC = {141,142,143,144,145,
+                                       146,147,148,149,1412,
+                                       1413,1452,1453,1462,1463};
+
+    private static Scanner in;
     
     
-    
-    public PlayerThread(Socket sock){
-        this.psock= sock;
-        this.player = new Player(this.psock);
+ 
+    public PlayerThread(Socket sock,String type){
+        switch(type){
+            case "NPC":
+                this.psock = sock;
+                npc.name="NEO";
+                npc.NPC = true;
+                npc.location = 148;
+                this.player = npc;
+                break;
+            case "NPC2":
+                this.psock = sock;
+                npc.name="MORPHEUS";
+                npc.NPC = true;
+                npc.location = 144;
+                this.player = npc;
+                break;    
+            default:
+                this.psock= sock;
+                this.player = new Player(this.psock);                
+                break;
+            
+        }
     }
 
     @Override
     public void run() {  
-        Scanner in;
-        PrintWriter out;
+        PrintWriter out = null;
         String playerIn;
         boolean exit = false;
-        boolean shutUp = false;
-        GMAN.name ="Moe";
-        GMAN2.name ="Larry";
-        GMAN3.name ="Curly";
         try {
-            in = new Scanner(psock.getInputStream());
-            out = new PrintWriter(psock.getOutputStream(), true);
-            out.println("Welcome to the North Adamselot! Mind th e gaps in reali ty");
-            World.movePlayer(GMAN, filesForNPC[(int)(Math.random()*filesForNPC.length)]);
-            World.movePlayer(GMAN2,filesForNPC[(int)(Math.random()*filesForNPC.length)]);
-            World.movePlayer(GMAN3,filesForNPC[(int)(Math.random()*filesForNPC.length)]);
-            if (!playerLogin(in, out)){ // Failed login
-                exit = true;
-                exitPlayer();
-            } else { //Successful login.
+            if(player.NPC){
+                Area a = new Area();
+                a.players.put(player.name, player);
+                //System.out.println("INI Player MAP" + a.players);
                 World.movePlayer(player, player.location);
-                World.sendMessageToArea(player, player.name + " has arrived.");
-                GFX.clearScreen(out);
-                World.displayArea(player.location, player);
-            }
-            while(!exit){ //Main loop
-                if(player.location == GMAN.location && shutUp==false){
-                    World.sendMessageToPlayer(GMAN, player.name, "Have you seen Larry or Curly?");
-                    shutUp = true;
+            }else{
+                in = new Scanner(psock.getInputStream());
+                out = new PrintWriter(psock.getOutputStream(), true);                
+                if (!playerLogin(in, out)){    //Login                
+                    exit = true;                    
+                } else { //Successful login
+                    //DUPLICATION NCHECK HERE
+                    Server.curUsers.add(player);
+                    player.NPC = false;
+                    System.out.println(Server.curUsers);
+                    Area a = World.getArea(player.location);
+                    World.movePlayer(player, player.location);
+                    World.sendMessageToArea(player, player.name + " has arrived.");
+                    World.displayArea(player.location, player);
                 }
-                else if(player.location == GMAN2.location && shutUp==false){
-                    World.sendMessageToPlayer(GMAN2, player.name, "Have you seen Moe or Curly?");
-                    shutUp = true;
+                while(!exit){ //Main loop
+                    if(player.NPC){
+                        // MOVE NPCs?
+                    }else{
+                        playerIn = in.nextLine();
+                        exit = commandDispatcher(playerIn, out);
+                    }
+
+                }       
+
+                //Player has left world
+                if(haxor==true){
+                    Player sys = new Player();
+                    sys.name = "Sys Admin";
+                    World.sendMessageToWorld(sys,"Sys Admin denial @ "+ player.name); 
+                    exitPlayer();
                 }
-                else if(player.location == GMAN3.location && shutUp==false){
-                    World.sendMessageToPlayer(GMAN3, player.name, "Have you seen Moe or Larry?");
-                    shutUp = true;
+                else{
+                    World.sendMessageToArea(player, player.name + " has returned to reality.");  
+                    exitPlayer();
                 }
-                playerIn = in.nextLine();
-                String[] tmp = playerIn.split(" ", 2);
-                // IF PLAYER MOVES NPC MOVES
-                if(tmp[0].equals("walk") || tmp[0].equals("w") || tmp[0].equals("go") || tmp[0].equals("g")){
-                    World.movePlayer(GMAN, filesForNPC[(int)(Math.random()*filesForNPC.length)]);
-                    World.movePlayer(GMAN2,filesForNPC[(int)(Math.random()*filesForNPC.length)]);
-                    World.movePlayer(GMAN3,filesForNPC[(int)(Math.random()*filesForNPC.length)]);
-                    shutUp = false;
-                }
-                cmdCtr++;
-                // MOVE EVERY 4 COMMANDS
-                if(cmdCtr == 4){
-                    World.movePlayer(GMAN, filesForNPC[(int)(Math.random()*filesForNPC.length)]);
-                    World.movePlayer(GMAN2,filesForNPC[(int)(Math.random()*filesForNPC.length)]);
-                    World.movePlayer(GMAN3,filesForNPC[(int)(Math.random()*filesForNPC.length)]);
-                    cmdCtr = 0;
-                }
-                    
-                exit = commandDispatcher(playerIn, out);
-            }       
-            
-            //Player has left world
-            World.sendMessageToArea(player, player.name + " has returned to reality.");
-            exitPlayer();
                 
+               
+            }        
         } catch (IOException | NoSuchElementException e) {
             //Connection has been lost
             World.sendMessageToArea(player, player.name + " crumbles into dust.");
@@ -98,14 +106,26 @@ public class PlayerThread implements Runnable {
     
     private void exitPlayer(){
         try {
-            String ip = psock.getInetAddress().toString();
-            System.out.println(ip + " disconnected.");
-            psock.close();
+            if(player.NPC || haxor==true){
+                if(haxor==true){
+                    System.out.println("Attack prevented! @ exitPlayer");
+                }
+                else{
+                    System.out.println("NPC disconnected.");
+                }
+            }else{
+                Server.curUsers.remove(player);
+                String ip = psock.getInetAddress().toString();
+                System.out.println(ip + " disconnected.");
+                System.out.println(Server.curUsers);
+                psock.close();                      
+            }
         } catch (IOException ex){ 
             System.out.println("An IOException occurred when a player exited.");
         }
         finally{
-            World.removePlayer(player);
+            if(haxor==false)
+                World.removePlayer(player);
         }
     }
     
@@ -123,26 +143,63 @@ public class PlayerThread implements Runnable {
             Stooges punchingBag = new Stooges();
             OUTER:
             switch (tokens[0].toLowerCase()) {
+                case "menu":
+                    //FUNCTION in,out
+                    break;
                 case "fight":
-                    World.doBattle(player,punchingBag);
-                    break;    
+                case "battle":
+                case "/b":
+                    switch(tokens.length){
+                        case 1:
+                            World.doBattle(player,punchingBag);
+                            break OUTER;
+                        case 2:
+                            switch(tokens[1]){
+                                
+                            }
+                            break OUTER;
+                        case 3:
+                            switch(tokens[1]){
+                                case "stand":
+                                    switch(tokens[2]){
+                                        case "ready":
+                                            player.FIGHT = true;
+                                            player.lastAction = "Fighter Ready!";
+                                            break OUTER;
+                                        case "down":
+                                            player.FIGHT = false;
+                                            player.lastAction = "Fighter Standing Down...";
+                                            break OUTER;
+                                        default:
+                                            break OUTER;
+                                    }
+                                case "check":
+                                    // FIGHTER COMPARISON FUNCTION in,out,player,p2name
+                                    break OUTER;
+                                default:
+                                    break OUTER;                            }
+                    }
                 case "stats":
                 case "/s":
                     switch(tokens.length){
                         case 1:
                             World.showPlayer(out, player);
+                            setStage(in,out,false,true);
                             break OUTER;
                         case 2:
                             World.showPlayer(out, player, tokens[1]);
+                            setStage(in,out,false,true);
                             break OUTER;
                         default:
                             World.helpMe(out, tokens[0], true);
+                            setStage(in,out,false,true);
                             break OUTER;
                     }
                 case "npc":
                 case "/n":
                     if(tokens.length == 3){
                         World.npcResponse(out, player, tokens[1], tokens[2]);
+                        setStage(in,out,false,true);
                     } else {
                         //World.helpMe(out,tokens[0],true);
                     }
@@ -157,7 +214,6 @@ public class PlayerThread implements Runnable {
                 case "g":
                     if (tokens.length > 1 && !"".equals(tokens[1])){
                         if (World.doWalk(player, tokens[1])){
-                            GFX.clearScreen(out);
                             World.displayArea(player.location, player);
                         } else {
                             out.println("You can't go in that direction.");
@@ -189,6 +245,7 @@ public class PlayerThread implements Runnable {
                                 case "d":
                                     GFX.clearScreen(out);
                                     World.doLook(out, player,tokens[1]);
+                                    setStage(in,out,false,true);
                                     break OUTER;
                                 default:
                                     Area a = World.areaMap.get(player.location);
@@ -307,9 +364,10 @@ public class PlayerThread implements Runnable {
                                 break OUTER;                                
                         }
                     }
-                    else
+                    else{
                         World.helpMe(out,tokens[0],true);
-                    break;    
+                        break; 
+                    }                             
                 case "exit":
                 case "quit":
                 case "/q": 
@@ -317,7 +375,7 @@ public class PlayerThread implements Runnable {
                     exitFlag = true;
                     break;
                 default:
-                    out.println("Command \"" + command + "\" is not valid.");
+                    out.println("Command --[ " + command + "] -- is not valid.");
             }
         }
         return exitFlag;
@@ -328,130 +386,125 @@ public class PlayerThread implements Runnable {
         boolean exit = false;
         boolean validUsername;
         boolean validPassword;
-        boolean validClass;
         String playerName = null;
         String playerPassword = null;
-        while(!exit){
-            validUsername = false;
-            validPassword = false;
-            validClass = false;
-            while(!validUsername){
-                out.print("Enter your existing or desired player name: ");
-                out.flush();
-                playerName = in.nextLine();
-                if (World.isValidPlayername(playerName)){
-                    validUsername = true;
-                } else {
-                    out.println("The player name " + playerName + " was not valid.");
-                    out.println("Your player name must be at least three characters " +
-                        "and only use letters, numbers, and the underscore.");
-                    if (!doAgain(in, out)){
-                        outcome = false;
-                        exit = true;
-                        break;
-                    }
-                }
-            }
-            if (validUsername){
-                if (World.doesPlayerExist(playerName)){
-                    while(!validPassword){
-                        out.print("Enter your password: ");
-                        out.flush();
-                        playerPassword = in.nextLine();
-                        if (World.isValidPassword(playerPassword)){
-                            player.name = playerName;
-                            player.password = playerPassword;
-                            Player x = World.loadPlayer(playerName);
-                            String tmp = Integer.toHexString(playerPassword.hashCode());
-                            if(tmp.equals(x.password)){
-                                player.description = x.description;
-                                player.location = x.location;
-                                player.inventory.addAll(x.inventory);
-                                validPassword = true;
-                                outcome = true;
-                                exit = true;
-                            }
-                            else{
-                               out.println("The password did not match our records.");
-                                if (!doAgain(in, out)){
-                                    outcome = false;
-                                    exit = true;
-                                    break;
-                            } 
-                            }
-                        } else {
-                            out.println("The password was not correct.");
-                            if (!doAgain(in, out)){
-                                outcome = false;
-                                exit = true;
-                                break;
-                            }
+        if(player.NPC){
+            outcome = true;
+            return outcome;
+        }
+        else
+        {
+            
+            while(!exit){
+                validUsername = false;
+                validPassword = false;
+                while(!validUsername){
+                    setStage(in,out,true,false);
+                    out.println("▼ USER @ The GRiD ");
+                    out.flush();
+                    playerName = in.nextLine();
+                    if (World.isValidPlayername(playerName)){
+                        validUsername = true;
+                    } else {
+
+                        setStage(in,out,true,false);
+                        out.println("The player name " + playerName + " was not valid.");
+                        out.println("Your player name must be at least three characters " +
+                            "and only use letters, numbers, and the underscore.");
+                        if (!doAgain(in, out)){
+                            outcome = false;
+                            exit = true;
+                            break;
                         }
                     }
-                } else {
-                    out.println("The player name " + playerName + " does not exist.");
-                    if (doAgain(in, out, "Would you like to use the name " + playerName + "?")){
+                }
+                if (validUsername){
+                    if (World.doesPlayerExist(playerName)){
                         while(!validPassword){
-                            String passwordRequirements = "A valid password is at least eight characters long, " +
-                                "contains at least one UPPERCASE letter, one lowercase letter, and one number.";
-                            out.println(passwordRequirements);
-                            out.print("Enter a password: ");
+                            out.println("▼ PASSCODE @ The GRiD");
                             out.flush();
                             playerPassword = in.nextLine();
                             if (World.isValidPassword(playerPassword)){
-                                player.name = playerName;
-                                player.password = playerPassword;
-                                World.writePlayer(player);
-                                validPassword = true;
-                                outcome = true;
-                                exit = true;
-                            } else {
-                                out.println("That password did not meet requirements.");
-                                if (!doAgain(in, out)){
-                                    if (doAgain(in, out, "Would you like to enter a new player name?")){
-                                        exit = false;
-                                    } else {
-                                        outcome = false;
+                                    player.name = playerName;
+                                    player.password = playerPassword;
+                                    Player x = World.loadPlayer(playerName);
+                                    String tmp = Integer.toHexString(playerPassword.hashCode());
+                                    if(tmp.equals(x.password)){
+                                        player.description = x.description;
+                                        player.location = x.location;
+                                        player.inventory.addAll(x.inventory);   
+                                        validPassword = true;
+                                        outcome = true;
                                         exit = true;
-                                    }
+                                    }else{
+                                        setStage(in,out,true,false);
+                                        out.println("? PASSCODE [ERROR] ➟ ");
+                                        if (!doAgain(in, out)){
+                                            outcome = false;
+                                            exit = true;
+                                            break;
+                                        }
+                                    }                                                  
+                            } else {
+                                out.println("? PASSCODE [ERROR] ➟ ");
+                                setStage(in,out,true,true);
+                                if (!doAgain(in, out)){
+                                    outcome = false;
+                                    exit = true;
                                     break;
                                 }
                             }
                         }
                     } else {
-                        if (doAgain(in, out, "Would you like to enter a new player name?")){
-                            exit = false;
+                        out.println("       USER ➟ " + playerName + " [ERROR]");
+                        if (doAgain(in, out, "CREATE USER ➟ " + playerName + "?")){
+                            //setStage(in,out,true,false);
+                            while(!validPassword){
+                                String passwordRequirements = "A valid password is at least eight characters long, " +
+                                    "contains at least one UPPERCASE letter, one lowercase letter, and one number.";
+                                out.println(passwordRequirements);
+                                out.print("SET PASSCODE ➟ ");
+                                out.flush();
+                                playerPassword = in.nextLine();
+                                if (World.isValidPassword(playerPassword)){
+                                    player.name = playerName;
+                                    player.password = playerPassword;
+                                    World.writePlayer(player);
+                                    validPassword = true;
+                                    outcome = true;
+                                    exit = true;
+                                } else {
+                                    out.println("That password did not meet requirements.");
+                                    if (!doAgain(in, out)){
+                                        if (doAgain(in, out, "? ENTER NEW USER ➟ ")){
+                                            exit = false;
+                                        } else {
+                                            outcome = false;
+                                            exit = true;
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
                         } else {
-                            outcome = false;
-                            exit = true;
+                            if (doAgain(in, out, "? ENTER NEW USER ➟ ")){
+                                exit = false;
+                                validUsername = false;
+                                validPassword = false;
+                            } else {
+                                outcome = false;
+                                exit = true;
+                            }
                         }
                     }
                 }
-            }
-            GFX.clearScreen(out);
-            String z = "";
-            while(!validClass){
-                out.println("What hat shall you don Today?");
-                out.println("1: Student");
-                z = in.nextLine();
-                if(z.equals("1")){
-                    Student X = new Student();
-                    player.setAC(X.getAC());
-                    player.setHP(X.getHP());
-                    validClass = true;
-                }
-                else
-                    GFX.clearScreen(out);
-//                System.out.println(player.getAC());
-//                System.out.println(player.getHP());
-            }
-            
+            } 
+            return outcome;
         }
-        return outcome;
     }
      
     private boolean doAgain(Scanner in, PrintWriter out){
-        String defaultPrompt = "Do you want to try again?";
+        String defaultPrompt = "? ATTEMPT TO RECONnect ➟ ";
         return doAgain(in, out, defaultPrompt);
     }
     
@@ -460,7 +513,7 @@ public class PlayerThread implements Runnable {
         boolean valid = false;
         boolean outcome = true;
         while(!valid){
-            out.print(prompt + " Yes or no? ");
+            out.print(prompt + " Y||N ");
             out.flush();
             choice = in.nextLine().toLowerCase();
             if (choice.equals("yes") || choice.equals("y")){
@@ -474,4 +527,22 @@ public class PlayerThread implements Runnable {
         return outcome;
     }
     
+    private void setStage(Scanner in,PrintWriter out,boolean main,boolean wait){
+        if(wait){
+            String playerIn;
+            playerIn = in.nextLine();  
+        }else{
+            GFX.clearScreen(out);
+        if(main){
+            out.println(String.format("|%67s|",GFX.mmBorder));
+            for(String x: GFX.theGRID){
+                out.println(String.format("|   %-10s   |", x));
+            }
+            out.println(String.format("|%69s|", "Designed by InvIcTuS \\,,/(O.\\\\)\\,,/   "));
+            out.println(String.format("|%67s|",GFX.mmBorder));
+        }
+        else
+            World.displayArea(player.location, player);
+        }
+    }
 }

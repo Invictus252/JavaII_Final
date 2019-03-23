@@ -6,8 +6,8 @@ public class Stooges extends Player {
       
     public Stooges(){
         this.description = "A Stooge";
-        setAC(0);
-        setHP(30);
+        this.armorClass=0;
+        this.hitPoints=30;
         this.NPC = true;
     }
        
