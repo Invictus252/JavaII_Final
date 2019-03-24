@@ -1,7 +1,7 @@
 [description]changed it
 [name]jason
 [password]14aaf9ec
-[location]148
-[inventory] -1,-1,
+[location]1413
+[inventory] script,worm,
 [hp]50
 [ac]10

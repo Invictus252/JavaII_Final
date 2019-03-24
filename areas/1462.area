@@ -1,5 +1,5 @@
-[title]You are @ 1462
-[description]Building 3 Floor 2
-[comment]These exits could change later in the design.
-[items]1462
+[title]Hardware Slots
+[description]You feel the magnetic crunch of transistors. 
+[description2]You're RAM hesitates to deliver at the overwhelming noise.
+[items]
 [exits]0,0,0,0,1463,146

@@ -1,6 +1,4 @@
-[title]Dark Castle
-[description]A long long winding road leading to a dark castle. There is a manhole at your feet.
-[comment]These exits could change later in the design.
-[gfx]southEast
-[items]141
+[title]Runtime
+[description]An expansive dynamic format. No errors allowed here.
+[items]
 [exits]0,0,0,145,1412,142

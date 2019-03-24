@@ -7,41 +7,37 @@ import java.net.Socket;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
-
 public class PlayerThread implements Runnable {
     
     
     private final Socket psock;
     private final Player player;
-    private static boolean haxor;
     private final Stooges npc = new Stooges();
     private final int[] filesForNPC = {141,142,143,144,145,
                                        146,147,148,149,1412,
                                        1413,1452,1453,1462,1463};
 
     private static Scanner in;
-    
-    
- 
+   
     public PlayerThread(Socket sock,String type){
         switch(type){
             case "NPC":
-                this.psock = sock;
+                psock = sock;
                 npc.name="NEO";
                 npc.NPC = true;
                 npc.location = 148;
-                this.player = npc;
+                player = npc;
                 break;
             case "NPC2":
-                this.psock = sock;
+                psock = sock;
                 npc.name="MORPHEUS";
                 npc.NPC = true;
                 npc.location = 144;
-                this.player = npc;
+                player = npc;
                 break;    
             default:
-                this.psock= sock;
-                this.player = new Player(this.psock);                
+                psock= sock;
+                player = new Player(this.psock);                
                 break;
             
         }
@@ -61,39 +57,53 @@ public class PlayerThread implements Runnable {
             }else{
                 in = new Scanner(psock.getInputStream());
                 out = new PrintWriter(psock.getOutputStream(), true);                
-                if (!playerLogin(in, out)){    //Login                
-                    exit = true;                    
+                if (!playerLogin(in, out) && !player.isLoggedON){    //Login                
+                    exit = true;
+                    System.out.println("PlayerThread@ RUN-> Login");
+                    System.out.println("NAME -> " + player.name 
+                                     + " | PASS -> " + player.password 
+                                     + " | isLoggedON -> " + player.isLoggedON);
+                    exitPlayer();
                 } else { //Successful login
                     //DUPLICATION NCHECK HERE
                     Server.curUsers.add(player);
                     player.NPC = false;
-                    System.out.println(Server.curUsers);
+                    player.isLoggedON = true;
                     Area a = World.getArea(player.location);
                     World.movePlayer(player, player.location);
                     World.sendMessageToArea(player, player.name + " has arrived.");
                     World.displayArea(player.location, player);
+                    System.out.println("PlayerThread@ RUN-> Successful Login");
+                    System.out.println("NAME -> " + player.name 
+                                     + " | PASS -> " + player.password 
+                                     + " | isLoggedON -> " + player.isLoggedON);
                 }
                 while(!exit){ //Main loop
                     if(player.NPC){
                         // MOVE NPCs?
                     }else{
+                        System.out.println("PlayerThread@ RUN-> Main");
+                        System.out.println("NAME -> " + player.name 
+                                     + " | PASS -> " + player.password 
+                                     + " | isLoggedON -> " + player.isLoggedON);
                         playerIn = in.nextLine();
+                        System.out.println("PlayerThread@ RUN-> playerIn : " + playerIn);
+                        if(playerIn ==null){
+                           in = new Scanner(psock.getInputStream()); 
+                        }
                         exit = commandDispatcher(playerIn, out);
                     }
 
                 }       
 
                 //Player has left world
-                if(haxor==true){
-                    Player sys = new Player();
-                    sys.name = "Sys Admin";
-                    World.sendMessageToWorld(sys,"Sys Admin denial @ "+ player.name); 
-                    exitPlayer();
-                }
-                else{
-                    World.sendMessageToArea(player, player.name + " has returned to reality.");  
-                    exitPlayer();
-                }
+                System.out.println("PlayerThread@ RUN-> Left World");
+                System.out.println("NAME -> " + player.name 
+                                     + " | PASS -> " + player.password 
+                                     + " | isLoggedON -> " + player.isLoggedON);
+                World.sendMessageToArea(player, player.name + " has returned to reality.");  
+                exitPlayer();
+
                 
                
             }        
@@ -105,27 +115,23 @@ public class PlayerThread implements Runnable {
     }
     
     private void exitPlayer(){
-        try {
-            if(player.NPC || haxor==true){
-                if(haxor==true){
-                    System.out.println("Attack prevented! @ exitPlayer");
-                }
-                else{
-                    System.out.println("NPC disconnected.");
-                }
-            }else{
+        if(player.NPC && player.isLoggedON){
+            System.out.println("NPC disconnected.");
+        }else{
+            try {
+                System.out.println("PlayerThread@ RUN-> exitPlayer()");
+                System.out.println("NAME -> " + player.name
+                        + " | PASS -> " + player.password
+                        + " | isLoggedON -> " + player.isLoggedON);
                 Server.curUsers.remove(player);
                 String ip = psock.getInetAddress().toString();
                 System.out.println(ip + " disconnected.");
                 System.out.println(Server.curUsers);
-                psock.close();                      
+                psock.close();
+            } catch (IOException ex){ 
+                System.out.println("An IOException occurred when a player exited.");
             }
-        } catch (IOException ex){ 
-            System.out.println("An IOException occurred when a player exited.");
-        }
-        finally{
-            if(haxor==false)
-                World.removePlayer(player);
+
         }
     }
     
@@ -142,7 +148,7 @@ public class PlayerThread implements Runnable {
                 tokens[0] = command;
             Stooges punchingBag = new Stooges();
             OUTER:
-            switch (tokens[0].toLowerCase()) {
+            switch (tokens[0].toLowerCase()){
                 case "menu":
                     //FUNCTION in,out
                     break;
@@ -164,11 +170,11 @@ public class PlayerThread implements Runnable {
                                     switch(tokens[2]){
                                         case "ready":
                                             player.FIGHT = true;
-                                            player.lastAction = "Fighter Ready!";
+                                            //player.lastAction = "Fighter Ready!";
                                             break OUTER;
                                         case "down":
                                             player.FIGHT = false;
-                                            player.lastAction = "Fighter Standing Down...";
+                                            //player.lastAction = "Fighter Standing Down...";
                                             break OUTER;
                                         default:
                                             break OUTER;
@@ -399,14 +405,25 @@ public class PlayerThread implements Runnable {
                 validUsername = false;
                 validPassword = false;
                 while(!validUsername){
+                    System.out.println("!validUsername@ ");
+                    System.out.println("NAME -> " + player.name 
+                                     + " | PASS -> " + player.password 
+                                     + " | isLoggedON -> " + player.isLoggedON);
                     setStage(in,out,true,false);
                     out.println("▼ USER @ The GRiD ");
                     out.flush();
                     playerName = in.nextLine();
                     if (World.isValidPlayername(playerName)){
+                        System.out.println("!validUsername@ if (World.isValidPlayername(playerName))");
+                        System.out.println("NAME -> " + player.name 
+                                         + " | PASS -> " + player.password 
+                                         + " | isLoggedON -> " + player.isLoggedON);
                         validUsername = true;
                     } else {
-
+                        System.out.println("!validUsername@ else");
+                        System.out.println("NAME -> " + player.name 
+                                        + " | PASS -> " + player.password 
+                                        + " | isLoggedON -> " + player.isLoggedON);
                         setStage(in,out,true,false);
                         out.println("The player name " + playerName + " was not valid.");
                         out.println("Your player name must be at least three characters " +
@@ -421,22 +438,50 @@ public class PlayerThread implements Runnable {
                 if (validUsername){
                     if (World.doesPlayerExist(playerName)){
                         while(!validPassword){
+                            System.out.println("validUsername@ !validPassword");
+                            System.out.println("NAME -> " + player.name 
+                                             + " | PASS -> " + player.password 
+                                             + " | isLoggedON -> " + player.isLoggedON);
                             out.println("▼ PASSCODE @ The GRiD");
                             out.flush();
                             playerPassword = in.nextLine();
                             if (World.isValidPassword(playerPassword)){
+                                    System.out.println("validUsername@ isValidPassword");
+                                    System.out.println("NAME -> " + player.name 
+                                                     + " | PASS -> " + player.password 
+                                                     + " | isLoggedON -> " + player.isLoggedON);
                                     player.name = playerName;
                                     player.password = playerPassword;
                                     Player x = World.loadPlayer(playerName);
                                     String tmp = Integer.toHexString(playerPassword.hashCode());
-                                    if(tmp.equals(x.password)){
+                                    if(tmp.equals(x.password) && !x.isLoggedON){
+                                        System.out.println("validUsername@ if(tmp.equals(x.password) && !x.isLoggedON");
+                                        System.out.println("NAME -> " + player.name 
+                                                         + " | PASS -> " + player.password 
+                                                         + " | isLoggedON -> " + player.isLoggedON);
                                         player.description = x.description;
                                         player.location = x.location;
-                                        player.inventory.addAll(x.inventory);   
+                                        player.inventory.addAll(x.inventory);
+                                        player.isLoggedON = true;
                                         validPassword = true;
                                         outcome = true;
                                         exit = true;
-                                    }else{
+                                    }else if(x.isLoggedON){
+                                        System.out.println("validUsername@ x.isLoggedON");
+                                        System.out.println("NAME -> " + player.name 
+                                                         + " | PASS -> " + player.password 
+                                                         + " | isLoggedON -> " + player.isLoggedON);                                        
+                                        setStage(in,out,true,false);
+                                        out.println("? HAXOR [ERROR] ➟ ");
+                                        outcome = false;
+                                        exit = true;
+                                        break;
+                                    }
+                                    else{
+                                        System.out.println("validUsername@ else INNER");
+                                        System.out.println("NAME -> " + player.name 
+                                                         + " | PASS -> " + player.password 
+                                                         + " | isLoggedON -> " + player.isLoggedON);
                                         setStage(in,out,true,false);
                                         out.println("? PASSCODE [ERROR] ➟ ");
                                         if (!doAgain(in, out)){
@@ -446,6 +491,10 @@ public class PlayerThread implements Runnable {
                                         }
                                     }                                                  
                             } else {
+                                System.out.println("validUsername@ else OUTER");
+                                System.out.println("NAME -> " + player.name 
+                                                 + " | PASS -> " + player.password 
+                                                 + " | isLoggedON -> " + player.isLoggedON);
                                 out.println("? PASSCODE [ERROR] ➟ ");
                                 setStage(in,out,true,true);
                                 if (!doAgain(in, out)){
@@ -456,6 +505,10 @@ public class PlayerThread implements Runnable {
                             }
                         }
                     } else {
+                        System.out.println("@ else NEW USER");
+                        System.out.println("NAME -> " + player.name 
+                                         + " | PASS -> " + player.password 
+                                         + " | isLoggedON -> " + player.isLoggedON);
                         out.println("       USER ➟ " + playerName + " [ERROR]");
                         if (doAgain(in, out, "CREATE USER ➟ " + playerName + "?")){
                             //setStage(in,out,true,false);

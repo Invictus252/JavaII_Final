@@ -39,12 +39,11 @@ public class World {
                 String[] portals = {"0000","0001","0010","0100","1000","1001"};
                 ArrayList<String> areaGFX = new ArrayList<>();
                 ArrayList<String> playerMENU = new ArrayList<>();
-                switch(a.gfx){
-                    default:
-                        areaGFX.addAll(Arrays.asList(GFX.screenDISPLAY[0]));
-                        break;
-                }
+                areaGFX.addAll(Arrays.asList(GFX.screenDISPLAY[0]));
                 StringAlignUtils CENTER = new StringAlignUtils(22, Alignment.CENTER);
+                StringAlignUtils detCENTER = new StringAlignUtils(69,Alignment.CENTER);
+                StringAlignUtils detRIGHT = new StringAlignUtils(69,Alignment.RIGHT);
+                StringAlignUtils detLEFT = new StringAlignUtils(69,Alignment.LEFT);
                 playerMENU.add(String.format("   %22s     |",CENTER.format("PLAYER")));
                 playerMENU.add(String.format("   %22s     |"," ").replace(" ","-"));
                 playerMENU.add(String.format("   %22s     |", p.name.toUpperCase()));
@@ -56,54 +55,161 @@ public class World {
                 playerMENU.add(String.format("   %22s     |"," ").replace(" ","-"));
                 playerMENU.add(String.format("   %22s     |",CENTER.format(".oO[MEM]Oo.")));
                 playerMENU.add(String.format("   %22s     |"," ").replace(" ","-"));
-                playerMENU.add(String.format("   %-17s%5d    ]|","SCRIPTS -----[ ",0));
-                playerMENU.add(String.format("   %-17s%5d    ]|","TROJANS -----[ ",0));
-                playerMENU.add(String.format("   %-17s%5d    ]|","WORMS   -----[ ",0));
-                playerMENU.add(String.format("   %-17s%5d    ]|","VIRUSES -----[ ",0));
-                playerMENU.add(String.format("   %-17s%5d    ]|","SCANS   -----[ ",0));
+                playerMENU.add(String.format("   %-17s%5d    ]|","SCRIPTS -----[ ",p.scriptCTR));
+                playerMENU.add(String.format("   %-17s%5d    ]|","TROJANS -----[ ",p.trojanCTR));
+                playerMENU.add(String.format("   %-17s%5d    ]|","WORMS   -----[ ",p.wormCTR));
+                playerMENU.add(String.format("   %-17s%5d    ]|","VIRUSES -----[ ",p.virusCTR));
+                playerMENU.add(String.format("   %-17s%5d    ]|","SCANS   -----[ ",p.scanCTR));
                 playerMENU.add(String.format("   %22s     |"," ").replace(" ","*"));
                 playerMENU.add(String.format("   %22s     |"," ").replace(" ","*"));
+                playerMENU.add(String.format("   %-22s     |",a.title.trim()));
                 playerMENU.add(String.format("   %22s     |"," ").replace(" ","*"));
                 playerMENU.add(String.format("   %22s     |"," ").replace(" ","*"));
                 playerMENU.add(String.format("   %22s     |"," ").replace(" ","|"));
-                for (String[] screenDISPLAY : GFX.screenDISPLAY) {
-                    screenCHANGE.addAll(Arrays.asList(screenDISPLAY));
-                    try        
-                    {
-                        Thread.sleep(300);
-                    } 
-                    catch(InterruptedException ex) 
-                    {
-                        Thread.currentThread().interrupt();
-                    }
-                    GFX.clearScreen(out);
-                    out.println(String.format("%110s", "▼ @ The GRiD ▼           ").replace(" ", "-"));
-                    for(int i = 0;i < screenCHANGE.size();i++){
-                        if(i+1 > playerMENU.size()){
-                            out.println(screenCHANGE.get(i));
+                int ctr=0;
+                switch(a.title.toLowerCase()){
+                    case "hardware dept":
+                    case "hardware slots":
+                    case "rig top":
+                        for (String[] screenDISPLAY : GFX.screenDISPLAY) {
+                            ctr++;
+                            screenCHANGE.addAll(Arrays.asList(screenDISPLAY));
+                            try        
+                            {
+                                Thread.sleep(300);
+                            } 
+                            catch(InterruptedException ex) 
+                            {
+                                Thread.currentThread().interrupt();
+                            }
+                            GFX.clearScreen(out);
+                            String activePrograms="Programs running -> ";
+                            activePrograms = a.players.values().stream().filter((aP) -> (!aP.name.equalsIgnoreCase(p.name))).map((aP) -> aP.name + " | ").reduce(activePrograms, String::concat);
+                            String codesAvail ="CODES: | ";
+                            codesAvail = a.items.stream().filter((x) -> (!x.equals(""))).map((x) -> x + " | ").reduce(codesAvail, String::concat);
+                            String exitsAvail ="PATHS AVAILABLE -> ";
+                            for (int i = 0; i < NUMBER_DIRECTIONS; i++){
+                                if (a.exits[i] != 0){
+                                    exitsAvail += portals[i] + " ";
+                                }
+                            }
+                            screenCHANGE.set(15,String.format("|   %69s     |",detCENTER.format(a.description)));
+                            screenCHANGE.set(16,String.format("|   %69s     |",detCENTER.format(a.description2)));
+                            screenCHANGE.set(17,String.format("|   %69s     |",detLEFT.format(activePrograms)));
+                            screenCHANGE.set(18,String.format("|   %69s     |",detLEFT.format(codesAvail)));
+                            screenCHANGE.set(19,String.format("|   %69s     |",detLEFT.format(exitsAvail)));
+                            out.println(String.format("%110s", "▼ @ The GRiD ▼           ").replace(" ", "-"));
+                            if(ctr==9){
+                                for(int i = 0;i < GFX.hardware.length;i++){
+                                    screenCHANGE.set(i+1,GFX.hardware[i]);
+                                }
+                            }
+                            for(int i = 0;i < screenCHANGE.size();i++){
+                                if(i+1 > playerMENU.size()){
+                                    out.println(screenCHANGE.get(i));
+                                }
+                                else{
+                                    out.print(screenCHANGE.get(i));
+                                    out.println(playerMENU.get(i));
+                                }
+                            }
+                            screenCHANGE.clear();
                         }
-                        else{
-                            out.print(screenCHANGE.get(i));
-                            out.println(playerMENU.get(i));
+                        break;
+                    case "queue":
+                    case "q train":
+                    case "final check":
+                        for (String[] screenDISPLAY : GFX.screenDISPLAYhex) {
+                            ctr++;
+                            screenCHANGE.addAll(Arrays.asList(screenDISPLAY));
+                            try        
+                            {
+                                Thread.sleep(300);
+                            } 
+                            catch(InterruptedException ex) 
+                            {
+                                Thread.currentThread().interrupt();
+                            }
+                            GFX.clearScreen(out);
+                            String activePrograms="Programs running -> ";
+                            activePrograms = a.players.values().stream().filter((aP) -> (!aP.name.equalsIgnoreCase(p.name))).map((aP) -> aP.name + " | ").reduce(activePrograms, String::concat);
+                            String codesAvail ="CODES: | ";
+                            codesAvail = a.items.stream().filter((x) -> (!x.equals(""))).map((x) -> x + " | ").reduce(codesAvail, String::concat);
+                            String exitsAvail ="PATHS AVAILABLE -> ";
+                            for (int i = 0; i < NUMBER_DIRECTIONS; i++){
+                                if (a.exits[i] != 0){
+                                    exitsAvail += portals[i] + " ";
+                                }
+                            }
+                            screenCHANGE.set(15,String.format("|   %69s     |",detCENTER.format(a.description)));
+                            screenCHANGE.set(16,String.format("|   %69s     |",detCENTER.format(a.description2)));
+                            screenCHANGE.set(17,String.format("|   %69s     |",detLEFT.format(activePrograms)));
+                            screenCHANGE.set(18,String.format("|   %69s     |",detLEFT.format(codesAvail)));
+                            screenCHANGE.set(19,String.format("|   %69s     |",detLEFT.format(exitsAvail)));
+                            out.println(String.format("%110s", "▼ @ The GRiD ▼           ").replace(" ", "-"));
+                            if(ctr==9){
+                                for(int i = 0;i < 14;i++){
+                                    screenCHANGE.set(i+1,GFX.screenDISPLAYhex[0][i+1]);
+                                }
+                            }
+                            for(int i = 0;i < screenCHANGE.size();i++){
+                                if(i+1 > playerMENU.size()){
+                                    out.println(screenCHANGE.get(i));
+                                }
+                                else{
+                                    out.print(screenCHANGE.get(i));
+                                    out.println(playerMENU.get(i));
+                                }
+                            }
+                            screenCHANGE.clear();
                         }
-                    }
-                    String activePrograms="Programs running -> ";
-                    activePrograms = a.players.values().stream().filter((aP) -> (!aP.name.equalsIgnoreCase(p.name))).map((aP) -> aP.name + " | ").reduce(activePrograms, String::concat);
-                    out.println(a.title.trim());
-                    out.println(activePrograms);
-                    String codesAvail ="CODES: | ";
-                    codesAvail = a.items.stream().filter((x) -> (!x.equals(""))).map((x) -> x + " | ").reduce(codesAvail, String::concat);
-                    out.println(codesAvail);
-                    String exitsAvail ="PATHS AVAILABLE -> ";
-                    for (int i = 0; i < NUMBER_DIRECTIONS; i++){
-                        if (a.exits[i] != 0){
-                            exitsAvail += portals[i] + " ";
+                        break;
+                    default:
+                            for (String[] screenDISPLAY : GFX.screenDISPLAY) {
+                            ctr++;
+                            screenCHANGE.addAll(Arrays.asList(screenDISPLAY));
+                            try        
+                            {
+                                Thread.sleep(300);
+                            } 
+                            catch(InterruptedException ex) 
+                            {
+                                Thread.currentThread().interrupt();
+                            }
+                            GFX.clearScreen(out);
+                            String activePrograms="Programs running -> ";
+                            activePrograms = a.players.values().stream().filter((aP) -> (!aP.name.equalsIgnoreCase(p.name))).map((aP) -> aP.name + " | ").reduce(activePrograms, String::concat);
+                            String codesAvail ="CODES: | ";
+                            codesAvail = a.items.stream().filter((x) -> (!x.equals(""))).map((x) -> x + " | ").reduce(codesAvail, String::concat);
+                            String exitsAvail ="PATHS AVAILABLE -> ";
+                            for (int i = 0; i < NUMBER_DIRECTIONS; i++){
+                                if (a.exits[i] != 0){
+                                    exitsAvail += portals[i] + " ";
+                                }
+                            }
+                            screenCHANGE.set(15,String.format("|   %69s     |",detCENTER.format(a.description)));
+                            screenCHANGE.set(16,String.format("|   %69s     |",detCENTER.format(a.description2)));
+                            screenCHANGE.set(17,String.format("|   %69s     |",detLEFT.format(activePrograms)));
+                            screenCHANGE.set(18,String.format("|   %69s     |",detLEFT.format(codesAvail)));
+                            screenCHANGE.set(19,String.format("|   %69s     |",detLEFT.format(exitsAvail)));
+                            out.println(String.format("%110s", "▼ @ The GRiD ▼           ").replace(" ", "-"));
+                            if(ctr==9){
+
+                            }
+                            for(int i = 0;i < screenCHANGE.size();i++){
+                                if(i+1 > playerMENU.size()){
+                                    out.println(screenCHANGE.get(i));
+                                }
+                                else{
+                                    out.print(screenCHANGE.get(i));
+                                    out.println(playerMENU.get(i));
+                                }
+                            }
+                            screenCHANGE.clear();
                         }
-                    }
-                    out.println(exitsAvail);
-                    //out.println(a.description);
-                    screenCHANGE.clear();
+                        break;
                 }
+                
             }
         }
         return outcome;
@@ -148,6 +254,9 @@ public class World {
                 switch(name){
                     case "description":
                         a.description = value.trim();
+                        break;
+                    case "description2":
+                        a.description2 = value.trim();
                         break;
                     case "gfx":
                         a.gfx = value.trim();
@@ -258,7 +367,8 @@ public class World {
      ***********************************************************************/
     public synchronized static void movePlayer(Player p, int newArea){
         Area a = getArea(p.location);
-        a.players.remove(p.name.toLowerCase());
+        if(!p.NPC)
+            a.players.remove(p.name.toLowerCase());
         Area b = getArea(newArea);
         b.players.put(p.name.toLowerCase(), p);
         p.location = newArea;
@@ -292,11 +402,11 @@ public class World {
                 pw.println("[location]" + String.valueOf(p.location));
                 pw.print("[inventory] ");
                 for(int i=0;i < p.inventory.size();i++){
-                    pw.print(p.inventory.indexOf(i));
+                    pw.print(p.inventory.get(i));
                     if(i != p.inventory.size())
                         pw.print(",");
                 }
-                pw.println();
+                pw.println();               
                 pw.println("[hp]" + p.getHP());
                 pw.println("[ac]" + p.getAC());
             }
@@ -422,14 +532,6 @@ public class World {
 // Mine
 //*************************************************************************
     
-/**************************************************************************
- * doWalk parses the direction from the players command line and calculates the 
- * correct area to move the player to. The areas IDs are within the area 
- * object pointed to by player.location.
- * @param p Player object
- * @param direction command line string entered by player
- * @return boolean - true if direction points to valid area ID, false if not.
- */
     public synchronized static boolean doWalk(Player p, String direction){
         boolean outcome = false;
         String[] dirList = {"north","south","west","east","up","down",
@@ -480,12 +582,6 @@ public class World {
         return outcome;        
     }
 
-/**************************************************************************
- * doLook looks into adjoining rooms and retrieves their descriptions
- * @param out PrintWriter in use
- * @param p Current player...used for reference
- * @param direction room to be displayed
- */
     public synchronized static void doLook(PrintWriter out,Player p,String direction) {
         String[] dirList = {"north","south","west","east","up","down",
                             "0000","0001","0010","0100","1000","1001"};
@@ -623,12 +719,6 @@ public class World {
         return outcome;
     }
     
-/***********************************************************************************
-     * helpMe can be used for command explaining or command direction
-     * @param out Current PrintWriter
-     * @param command command being referenced
-     * @param err Boolean used to establish what level of dialogue is needed
-     */
     public synchronized static void helpMe(PrintWriter out,String command,boolean err){
         String[] helpLine = {"",""};
         switch(command){
@@ -687,6 +777,25 @@ public class World {
         Area a = getArea(p.location);
         if(a.items.contains(item)){
            p.inventory.add(item);
+           switch(item){
+               case "scan":
+                    p.scanCTR++;
+                    break;
+                case "worm":
+                    p.wormCTR++;
+                    break; 
+                case "trojan":
+                    p.trojanCTR++;
+                    break;
+                case "virus":
+                    p.virusCTR++;
+                    break;
+                case "script":
+                    p.scriptCTR++;
+                    break;
+                default:
+                    break;
+           }
            a.items.remove(item); 
         }
     } 
@@ -695,6 +804,25 @@ public class World {
         Area a = getArea(p.location);
         if(p.inventory.contains(item)){
             p.inventory.remove(item);
+            switch(item){
+               case "scan":
+                    p.scanCTR--;
+                    break;
+                case "worm":
+                    p.wormCTR--;
+                    break; 
+                case "trojan":
+                    p.trojanCTR--;
+                    break;
+                case "virus":
+                    p.virusCTR--;
+                    break;
+                case "script":
+                    p.scriptCTR--;
+                    break;
+                default:
+                    break;
+           }
             a.items.add(item);
         }
         
@@ -708,14 +836,13 @@ public class World {
     
     public synchronized static void listInventory(PrintWriter out,Player p){
         out.print("Current Inventory ----[ | ");
-        if(p.inventory.isEmpty()){
-            out.println(" | ]");
-        }
-        else{
+        if(!p.inventory.isEmpty()){
             p.inventory.forEach((x) -> {
                 out.print(x + " | ");
             }); 
-            out.println(" ]");
+            out.println(" ]");            
+        }else{
+            out.println("| ]");
         }
     }
     

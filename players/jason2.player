@@ -1,5 +1,7 @@
 [description]A rather ordinary looking player.
-[name]Jason2
+[name]jason2
 [password]14aaf9ec
 [location]144
-[inventory] 
+[inventory] ,
+[hp]50
+[ac]10

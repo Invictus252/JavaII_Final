@@ -1,6 +1,4 @@
-[title]You are @ 149
-[description]Clearing with a wall, view of some buildings and what seems like a town square to the west
-[comment]These exits could change later in the design.
-[gfx]townSquare
-[items]149
+[title]IO Node
+[description]The gateway to elsewhere...You see the CPU to the west
+[items]script
 [exits]0,0,144,158,0,0

@@ -1,6 +1,6 @@
-[title]You are @ 143
-[description]Underground bunker
-[comment]These exits could change later in the design.
-[items]143
+[title]Subroutine
+[description]You have dropped into  a new program. 
+[description2]It seems you can move ASYNC to the tasks above
+[items]script
 [exits]0,0,0,142,144,0
 

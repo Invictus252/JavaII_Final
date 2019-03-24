@@ -1,5 +1,5 @@
-[title]You are @ 1463
-[description]Building 3 Floor 3
-[comment]These exits could change later in the design.
-[items]1463
+[title]Rig Top
+[description]You look below at the the immensely overwhelming site of software,
+[description2] hardware, and life.
+[items]
 [exits]0,0,0,0,0,1462

@@ -12,18 +12,42 @@ public class Player {
     public int location = 144;
     public int armorClass =10;
     public int hitPoints = 50;
-    private int XP;
+    public int scanCTR =0;
+    public int virusCTR =0;
+    public int trojanCTR =0;
+    public int scriptCTR = 0;
+    public int wormCTR = 0;
+    private int XP = 0;
     public int acMOD = 0;
     public boolean NPC = false;
     public boolean FIGHT = false;
-    public boolean SAVAGE = false;
-    public boolean worldACTIVE = true;
-    public String lastAction = "";
+    public boolean isLoggedON = false;
     public ArrayList<String> inventory = new ArrayList<>();
     public Socket socket;
     
-    public Player(){this.XP = 100;
-}
+    public Player(){
+        for(String x : inventory){
+            switch(x){
+                case "scan":
+                    scanCTR++;
+                    break;
+                case "worm":
+                    wormCTR++;
+                    break; 
+                case "trojan":
+                    trojanCTR++;
+                    break;
+                case "virus":
+                    virusCTR++;
+                    break;
+                case "script":
+                    scriptCTR++;
+                    break;
+                default:
+                    break;
+            }
+        }        
+    }
      
     public void setAC(int ac){
         armorClass = ac;
@@ -51,8 +75,7 @@ public class Player {
     }
     
     public Player(Socket sock){
-        this.XP = 100;
-        this.socket = sock;
+        socket = sock;
     }
 
     /**

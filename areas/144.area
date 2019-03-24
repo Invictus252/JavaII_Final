@@ -1,6 +1,5 @@
-[title]You are @ 144
-[description]Town Square...you can see a few large buildings across a riverway to the south of you. A puddle makes a constant dripping noise as it drains into a manhole.
-[comment]These exits could change later in the design.
-[gfx]buildingsWithManhole
-[items]144
+[title]Main Core
+[description]The CPU towers over. 
+[description2]You can feel the pulses of electrons surging around you.
+[items]scan,scan
 [exits]148,145,147,149,0,143

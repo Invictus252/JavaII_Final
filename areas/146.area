@@ -1,6 +1,4 @@
-[title]The Shop
-[description]A large building that buzzes with zzZ| Electricity |Zzz
-[comment]These exits could change later in the design.
-[gfx]southWest
-[items]146
+[title]Hardware Dept
+[description]A large processor that buzzes with zzZ| Electricity |Zzz
+[items]
 [exits]0,0,145,0,1462,0
